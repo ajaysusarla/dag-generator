@@ -1,0 +1,4 @@
+*.o
+dag-discover
+dag-gen-server
+*.~

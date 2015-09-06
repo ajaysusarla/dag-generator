@@ -1,0 +1,2 @@
+Server : Generates a DAG
+Client : discovers and builds the DAG
