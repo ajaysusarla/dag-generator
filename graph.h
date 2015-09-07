@@ -18,19 +18,19 @@
 #define _GRAPH_H_
 
 typedef struct graph Graph;
-typedef struct node Node;
+typedef struct vertex Vertex;
 typedef struct edge Edge;
 
 /* Graph */
 struct graph {
         int count;
-        Node *first;
+        Vertex *first;
         int (* compare)(void *arg1, void *arg2);
 };
 
-/* Node */
-struct node {
-        Node *next;
+/* Vertex */
+struct vertex {
+        Vertex *next;
         void *data;
         int indegree;
         int outdegree;
@@ -39,13 +39,16 @@ struct node {
 
 /* Edge */
 struct edge {
-        Node *dest;
+        Vertex *dest;
         int weight;
         Edge *next;
 };
 
 /* Functions */
-Graph *graph_init(void);
+Graph *graph_init(int (* compare)(void *arg1, void *arg2));
 void graph_free(Graph *graph);
+int graph_new_vertex(Graph *graph, void *data);
+int graph_delete_vertex(Graph *graph, void *data);
+int graph_add_edge(Graph *graph, void *from, void *to, int weight);
 
 #endif  /* _GRAPH_H_ */

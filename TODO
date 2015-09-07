@@ -1,0 +1,6 @@
+* strip '\n' and '\r' from buffers
+* add '\n' when sending buffers
+* generate graph
+* hashtable to store Graph pointer (one for every new connection) after generating graph
+* logging
+* storing, generated graphs in a log file
