@@ -20,7 +20,7 @@
 #include "graph.h"
 
 /* Internal Functions */
-void _destroy_graph(Node *node)
+static void _destroy_graph(Node *node)
 {
         if (node) {
                 /* TODO: Complete this */
@@ -29,7 +29,7 @@ void _destroy_graph(Node *node)
         return;
 }
 
-Graph *graph_new(void)
+Graph *graph_init(void)
 {
         Graph *graph = NULL;
 
@@ -58,6 +58,7 @@ int graph_new_node(Graph *graph, void *data)
 {
         Node *new = NULL;
         Node *tptr = NULL;
+        Node *tnext, *tprev;
 
         /* Create new node */
         new = (Node *)malloc(sizeof(Node));

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -33,7 +34,10 @@
 #define MIN_EDGE_NUM 2
 #define MAX_EDGE_NUM 9
 
-void usage(char *prog)
+/* Server listening socket */
+int server_sock;
+
+static void usage(char *prog)
 {
         fprintf(stderr, "USAGE: %s <num>\n\n", prog);
         fprintf(stderr, "        num: max number of edges for a node, ");
@@ -41,9 +45,14 @@ void usage(char *prog)
                 MIN_EDGE_NUM, MAX_EDGE_NUM);
 }
 
+static void cleanup()
+{
+        close(server_sock);
+        return;
+}
+
 int main(int argc, char **argv)
 {
-        int sock;
         fd_set active_fd_set, read_fd_set;
         int max_edge;
 
@@ -52,7 +61,7 @@ int main(int argc, char **argv)
 #ifdef MACOSX
         unsigned int size;
 #else
-        size_t size;
+        socklen_t size;
 #endif
         if (argc != 2) {
                 usage(argv[0]);
@@ -65,14 +74,17 @@ int main(int argc, char **argv)
                 exit(EXIT_FAILURE);
         }
 
-        sock = create_server_socket(PORT);
-        if (listen(sock, 1) < 0) {
+        signal(SIGINT, cleanup);
+        signal(SIGTERM, cleanup);
+
+        server_sock = create_server_socket(PORT);
+        if (listen(server_sock, 1) < 0) {
                 perror("listen");
                 exit(EXIT_FAILURE);
         }
 
         FD_ZERO(&active_fd_set);
-        FD_SET(sock, &active_fd_set);
+        FD_SET(server_sock, &active_fd_set);
 
         while (1) {
                 read_fd_set = active_fd_set;
@@ -84,10 +96,10 @@ int main(int argc, char **argv)
 
                 for (i = 0; i < FD_SETSIZE; i++) {
                         if (FD_ISSET(i, &read_fd_set)) {
-                                if (i == sock) { /* New connection */
+                                if (i == server_sock) { /* New connection */
                                         int new;
                                         size = sizeof(clientname);
-                                        new = accept(sock,
+                                        new = accept(server_sock,
                                                      (struct sockaddr *)&clientname,
                                                      &size);
                                         if (new < 0) {
@@ -106,7 +118,7 @@ int main(int argc, char **argv)
                                         } else {
                                                 fprintf(stderr, "MSG: %s\n", buffer);
                                                 if (strncmp(buffer, RESET, strlen(RESET)) == 0) {
-                                                write_to_socket(i, START, strlen(START));
+                                                        write_to_socket(i, START, strlen(START));
                                                 }
                                         }
                                 }

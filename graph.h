@@ -45,7 +45,7 @@ struct edge {
 };
 
 /* Functions */
-Graph *graph_new(void);
+Graph *graph_init(void);
 void graph_free(Graph *graph);
 
 #endif  /* _GRAPH_H_ */
