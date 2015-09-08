@@ -22,10 +22,13 @@
 
 #include <netdb.h>
 
+double drand(void);
+#define irand(x) ((unsigned int) ((x) * drand()))
+
 #define MSG_SIZE 512
-#define START "START\n"
-#define END "END\n"
-#define RESET "RESET\n"
+#define START "START"
+#define END "END"
+#define RESET "RESET"
 
 int read_from_socket(int sockfd, char *buffer);
 int write_to_socket(int sockfd, char *buffer, int len);

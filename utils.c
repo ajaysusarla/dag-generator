@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #include "utils.h"
@@ -24,16 +25,22 @@
 int read_from_socket(int sockfd, char *buffer)
 {
         int nbytes;
+        int len;
 
         nbytes = read(sockfd, buffer, MSG_SIZE);
         if (nbytes < 0) {
                 perror("read");
                 return nbytes;
-        } else if (nbytes == 0) {
-                return -1;      /* EOF */
-        } else {
-                return nbytes;
         }
+
+        if (nbytes == 0) {
+                return -1;      /* EOF */
+        }
+
+        /* Remove trailing '\r\n' or '\n' */
+        len = strcspn(buffer, "\r\n");
+        buffer[len] = 0;
+        return len;
 }
 
 int write_to_socket(int sockfd, char *buffer, int len)
@@ -45,6 +52,9 @@ int write_to_socket(int sockfd, char *buffer, int len)
                 perror("write");
                 exit(EXIT_FAILURE);
         }
+
+        /* Write "\n" to the socket. */
+        write(sockfd, "\n", 2);
 
         return nbytes;
 }
@@ -84,4 +94,19 @@ void init_sockaddr(struct sockaddr_in *name, const char *hostname, uint16_t port
         }
 
         name->sin_addr = *(struct in_addr *)hostinfo->h_addr;
+}
+
+
+/* From: http://www.azillionmonkeys.com/qed/random.html */
+#define RS_SCALE (1.0 / (1.0 + RAND_MAX))
+
+double drand(void)
+{
+    double d;
+
+    do {
+            d = (((rand () * RS_SCALE) + rand ()) * RS_SCALE + rand ()) * RS_SCALE;
+    } while (d >= 1); /* Round off */
+
+    return d;
 }

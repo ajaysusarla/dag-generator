@@ -24,7 +24,18 @@
 static void _destroy_graph(Vertex *vert)
 {
         if (vert) {
-                /* TODO: Complete this */
+                Edge *e;
+                free(vert->data);
+                vert->data = NULL;
+
+                e = vert->edge;
+                while (e) {
+                        Edge *t = e;
+                        e = e->next;
+                        free(t);
+                }
+
+                _destroy_graph(vert->next);
         }
 
         return;
@@ -190,19 +201,23 @@ int graph_add_edge(Graph *graph, void *from, void *to, int weight)
                 v_from = v_from->next;
 
         if (!v_from || (graph->compare(from, v_from->data) != 0)) {
-                free(e_new);
+                if (e_new) {
+                        free(e_new);
+                        e_new = NULL;
+                }
                 return -2;
         }
 
         /* Find destination vertex */
         v_to = graph->first;
-        while (v_to && (graph->compare(to, v_to->data) > 0)) {
-                free(e_new);
+        while (v_to && (graph->compare(to, v_to->data) > 0))
                 v_to = v_to->next;
-        }
 
         if (!v_to || (graph->compare(to, v_to->data) != 0)) {
-                free(e_new);
+                if (e_new) {
+                        free(e_new);
+                        e_new = NULL;
+                }
                 return -3;
         }
 
@@ -235,4 +250,30 @@ int graph_add_edge(Graph *graph, void *from, void *to, int weight)
         e_new->next = e_walker;
 
         return 1;
+}
+
+/*
+ * Function: graph_print()
+ * Arguments :
+ * Return    :
+ */
+void graph_print(Graph *graph)
+{
+        Vertex *v;
+
+        v = graph->first;
+
+        while (v) {
+                Edge *e;
+                printf("[%s] :", (char *)v->data);
+                e = v->edge;
+
+                while (e) {
+                        printf("\t --(%d)--> [%s]\n", e->weight, (char*)e->dest->data);
+                        e = e->next;
+                }
+
+                v = v->next;
+                printf("\n");
+        }
 }

@@ -1,4 +1,4 @@
-cc = gcc
+CC = gcc
 
 # Platform
 UNAME := $(shell $(CC) -dumpmachine 2>&1 | grep -E -o "linux|darwin")
@@ -14,7 +14,7 @@ OSFLAGS = -DSOLARIS
 DEBUG = -g
 endif
 
-EXTRA_CFLAGS = -Wall
+EXTRA_CFLAGS = -Wall -Wextra -pedantic
 LIBS =
 CFLAGS = $(DEBUG) $(EXTRA_CFLAGS) $(OSFLAGS)
 
