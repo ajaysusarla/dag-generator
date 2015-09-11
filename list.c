@@ -74,7 +74,7 @@ int list_append(List *list, char *data)
         }
 
         node = (Node *)malloc(sizeof(Node));
-        if(!malloc) {
+        if(!node) {
                 return -1;
         }
 
