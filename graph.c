@@ -21,21 +21,20 @@
 #include "graph.h"
 
 /* Internal Functions */
-static void _destroy_graph(Vertex *vert)
+static void _destroy_graph(Vertex *vert, int max_edges)
 {
         if (vert) {
-                Edge *e;
+                int i;
+
                 free(vert->data);
                 vert->data = NULL;
 
-                e = vert->edge;
-                while (e) {
-                        Edge *t = e;
-                        e = e->next;
-                        free(t);
+                for (i = 0; i < max_edges; i++) {
+                        if (vert->edges[i] != NULL)
+                                free(vert->edges[i]);
                 }
 
-                _destroy_graph(vert->next);
+                _destroy_graph(vert->next, max_edges);
         }
 
         return;
@@ -47,7 +46,7 @@ static void _destroy_graph(Vertex *vert)
  * Arguments :
  * Returns   :
  */
-Graph *graph_init(int (* compare)(void *arg1, void *arg2))
+Graph *graph_init(int (* compare)(void *arg1, void *arg2), int max_edges)
 {
         Graph *graph = NULL;
 
@@ -55,6 +54,7 @@ Graph *graph_init(int (* compare)(void *arg1, void *arg2))
         if (graph) {
                 graph->count = 0;
                 graph->first = NULL;
+                graph->max_edges = max_edges;
                 /* If no compare() function is given, default to strcmp */
                 if (compare != NULL)
                         graph->compare = compare;
@@ -69,9 +69,11 @@ Graph *graph_init(int (* compare)(void *arg1, void *arg2))
 void graph_free(Graph *graph)
 {
         if (graph) {
-                _destroy_graph(graph->first);
+                _destroy_graph(graph->first, graph->max_edges);
 
                 free(graph);
+
+                graph = NULL;
         }
 
         return;
@@ -88,6 +90,7 @@ int graph_new_vertex(Graph *graph, void *data)
         Vertex *v_new = NULL;
         Vertex *v_cur = NULL;
         Vertex *v_prev;
+        int i;
 
         /* Create new node */
         v_new = (Vertex *)malloc(sizeof(Vertex));
@@ -100,7 +103,18 @@ int graph_new_vertex(Graph *graph, void *data)
         v_new->data = data;
         v_new->indegree = 0;
         v_new->outdegree = 0;
-        v_new->edge = NULL;
+        v_new->edges = NULL;
+
+        v_new->edges = malloc(graph->max_edges * sizeof(Edge));
+        if (!v_new->edges) {
+                fprintf(stderr, "[ERROR] Memory issue.\n");
+                exit(EXIT_FAILURE);
+        }
+
+
+        for (i = 0; i < graph->max_edges; i++)
+                v_new->edges[i] = NULL;
+
 
         ++graph->count;
 
@@ -163,6 +177,7 @@ int graph_delete_vertex(Graph *graph, void *data)
 
         --graph->count;
 
+        free(v_walker->edges);
         free(v_walker);
 
 
@@ -206,31 +221,19 @@ Vertex * graph_get_vertex(Graph *graph, void *data)
 int graph_add_edge(Graph *graph, void *from, void *to, int weight)
 {
         Edge *e_new;
-        Edge *e_prev;
-        Edge *e_walker;
 
         Vertex *v_from;
         Vertex *v_to;
+
+
+        if (weight >= graph->max_edges)
+                return -1;
+
 
         e_new = (Edge *)malloc(sizeof(Edge));
         if (!e_new) {
                 fprintf(stderr, "[ERROR] Memory issue.\n");
                 exit(EXIT_FAILURE);
-        }
-
-        e_new->weight = weight;
-
-        /* Find source vertex */
-        v_from = graph->first;
-        while (v_from && (graph->compare(from, v_from->data) > 0))
-                v_from = v_from->next;
-
-        if (!v_from || (graph->compare(from, v_from->data) != 0)) {
-                if (e_new) {
-                        free(e_new);
-                        e_new = NULL;
-                }
-                return -2;
         }
 
         /* Find destination vertex */
@@ -246,33 +249,49 @@ int graph_add_edge(Graph *graph, void *from, void *to, int weight)
                 return -3;
         }
 
+        /* Find source vertex */
+        v_from = graph->first;
+        while (v_from && (graph->compare(from, v_from->data) > 0))
+                v_from = v_from->next;
+
+        if (!v_from || (graph->compare(from, v_from->data) != 0)) {
+                if (e_new) {
+                        free(e_new);
+                        e_new = NULL;
+                }
+                return -2;
+        }
+
+        if (v_from->outdegree + 1 >= graph->max_edges) {
+                free(e_new);
+                e_new = NULL;
+                return -1;
+        }
+
+        if (v_from->edges[weight] != NULL) {
+                int i;
+                for (i = 0; i < graph->max_edges; i++) {
+                        if (v_from->edges[i] == NULL) {
+                                v_from->edges[i] = e_new;
+                                e_new->weight = i;
+                                goto end;
+                        }
+                }
+
+                free(e_new);
+                e_new = NULL;
+                return -1;
+        } else {
+                v_from->edges[weight] = e_new;
+                e_new->weight = weight;
+        }
+
+end:
+        e_new->dest = v_to;
+
         ++v_from->outdegree;
         ++v_to->indegree;
 
-        e_new->dest = v_to;
-
-        /* New edge from this vertex */
-        if (!v_from->edge) {
-                v_from->edge = e_new;
-                e_new->next = NULL;
-                return 1;
-        }
-
-        /* Vertex has edge(s), Insert in edge list */
-        e_prev = NULL;
-        e_walker = v_from->edge;
-
-        while(e_walker && (graph->compare(to, e_walker->dest->data) >= 0)) {
-                e_prev = e_walker;
-                e_walker = e_walker->next;
-        }
-
-        if (!e_prev)
-                v_from->edge = e_new;
-        else
-                e_prev->next = e_new;
-
-        e_new->next = e_walker;
 
         return 1;
 }
@@ -289,16 +308,19 @@ void graph_print(Graph *graph)
         v = graph->first;
 
         while (v) {
-                Edge *e;
-                printf("[%s] :", (char *)v->data);
-                e = v->edge;
+                int i;
+                printf("[%s]:\n", (char *)v->data);
 
-                while (e) {
-                        printf("\t --(%d)--> [%s]\n", e->weight, (char*)e->dest->data);
-                        e = e->next;
+                for (i = 0; i < graph->max_edges; i++) {
+                        if (v->edges[i] != NULL) {
+                                printf("\t --(%d)--> [%s]\n",
+                                       v->edges[i]->weight,
+                                       (char*)v->edges[i]->dest->data);
+                        }
+
                 }
 
+
                 v = v->next;
-                printf("\n");
         }
 }

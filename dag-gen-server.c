@@ -36,7 +36,7 @@
 #define MAX_EDGE_NUM 9
 
 #define MAX_VERTICES 20
-#define MAX_STR_LEN 10
+#define MAX_STR_LEN 4
 
 /* Server listening socket */
 int server_sock;
@@ -62,8 +62,8 @@ Graph *generate_graph(int edges)
         int num_vertices, i, max_edges;
         char *prev_data;
 
-        g = graph_init(NULL);
-        t = graph_init(NULL);
+        g = graph_init(NULL, edges);
+        t = graph_init(NULL, edges);
 
         list = list_init();
 
@@ -73,6 +73,11 @@ Graph *generate_graph(int edges)
         /* Create data for vertices */
         for (i = 0; i < num_vertices; i++) {
                 char arr[MAX_STR_LEN] = {0};
+                int n = 0;
+
+                while (n == 0)
+                        n = irand(100);
+
                 sprintf(arr, "%d", irand(100));
 
                 while (list_has_element(list, arr))
@@ -95,6 +100,11 @@ Graph *generate_graph(int edges)
         while (t->count) {
                 int tmp_idx =  irand(list->length);
                 char *cur_data = NULL;
+                Vertex *v;
+
+                while ((v =graph_get_vertex(g, prev_data)) && (v->outdegree > edges)) {
+                        prev_data = list_get_index(list, irand(list->length));
+                }
 
                 cur_data = list_get_index(list, tmp_idx);
 
@@ -104,9 +114,9 @@ Graph *generate_graph(int edges)
                         if ((strcmp(prev_data, "END") == 0) ||
                             (strcmp(cur_data, "START") == 0)) {
                                 graph_add_edge(g, cur_data, prev_data, irand(edges));
-                                 } else {
+                        } else {
                                 graph_add_edge(g, prev_data, cur_data, irand(edges));
-                                 }
+                        }
                         graph_delete_vertex(t, cur_data);
                 }
 

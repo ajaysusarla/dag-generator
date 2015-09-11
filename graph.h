@@ -24,6 +24,7 @@ typedef struct edge Edge;
 /* Graph */
 struct graph {
         int count;
+        int max_edges;
         Vertex *first;
         int (* compare)(void *arg1, void *arg2);
 };
@@ -34,18 +35,17 @@ struct vertex {
         void *data;
         int indegree;
         int outdegree;
-        Edge *edge;
+        Edge **edges;
 };
 
 /* Edge */
 struct edge {
         Vertex *dest;
         int weight;
-        Edge *next;
 };
 
 /* Functions */
-Graph *graph_init(int (* compare)(void *arg1, void *arg2));
+Graph *graph_init(int (* compare)(void *arg1, void *arg2), int max_edges);
 void graph_free(Graph *graph);
 int graph_new_vertex(Graph *graph, void *data);
 int graph_delete_vertex(Graph *graph, void *data);
