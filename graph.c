@@ -170,6 +170,31 @@ int graph_delete_vertex(Graph *graph, void *data)
 }
 
 /*
+ * Function: graph_get_vertex()
+ * Arguments :
+ * Return    : Finds and returns a vertex containing 'data',
+ *             NULL otherwise
+ */
+Vertex * graph_get_vertex(Graph *graph, void *data)
+{
+        Vertex *vert = NULL;
+
+        if (!graph->first)
+                return NULL;
+
+        vert = graph->first;
+        while(vert && (graph->compare(data, vert->data) > 0)) {
+                vert = vert->next;
+        }
+
+        if (!vert || (graph->compare(data, vert->data) != 0))
+                return NULL;
+
+        /* Found the vertex */
+        return vert;
+}
+
+/*
  * Function: graph_add_edge()
  * Arguments :
  * Return    :

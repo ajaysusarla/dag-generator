@@ -49,6 +49,7 @@ Graph *graph_init(int (* compare)(void *arg1, void *arg2));
 void graph_free(Graph *graph);
 int graph_new_vertex(Graph *graph, void *data);
 int graph_delete_vertex(Graph *graph, void *data);
+Vertex * graph_get_vertex(Graph *graph, void *data);
 int graph_add_edge(Graph *graph, void *from, void *to, int weight);
 void graph_print(Graph *graph);
 
