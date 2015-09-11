@@ -27,12 +27,16 @@
 #include <unistd.h>
 
 #include "graph.h"
+#include "list.h"
 #include "utils.h"
 
 #define PORT 8865
 
 #define MIN_EDGE_NUM 2
 #define MAX_EDGE_NUM 9
+
+#define MAX_VERTICES 20
+#define MAX_STR_LEN 10
 
 /* Server listening socket */
 int server_sock;
@@ -53,53 +57,64 @@ static void cleanup()
 
 Graph *generate_graph(int edges)
 {
-        #define MAX_VERTICES 20
-        #define MAX_STR_LEN 10
-        Graph *g;
+        Graph *g, *t;
+        List *list = NULL;
         int num_vertices, i, max_edges;
-        char arr[MAX_VERTICES][MAX_STR_LEN];
-        int start_idx, end_idx;
+        char *prev_data;
 
         g = graph_init(NULL);
-        graph_new_vertex(g, "START");
-        graph_new_vertex(g, "END");
+        t = graph_init(NULL);
 
-        /* Create a random number of vertices */
+        list = list_init();
+
+        /* Select a random number of vertices */
         num_vertices = irand(MAX_VERTICES);
+
+        /* Create data for vertices */
         for (i = 0; i < num_vertices; i++) {
-                sprintf(arr[i], "%d", i*10);
-                graph_new_vertex(g, strdup(arr[i]));
+                char arr[MAX_STR_LEN] = {0};
+                sprintf(arr, "%d", irand(100));
+
+                while (list_has_element(list, arr))
+                        sprintf(arr, "%d", irand(100));
+
+                list_append(list, strdup(arr));
+                graph_new_vertex(t, strdup(arr));
         }
 
-        sprintf(arr[num_vertices++], "%s", strdup("START"));
-        sprintf(arr[num_vertices++], "%s", strdup("END"));
-        start_idx = num_vertices - 2;
-        end_idx = num_vertices - 1;
+        list_append(list, strdup("END"));
+
 
         /* Max edges */
         max_edges = num_vertices * edges;
-        /* Create edges */
-        for (i = 0; i < max_edges; i++) {
-                int from_idx, to_idx;
-                int weight = irand(edges);
 
-                from_idx = irand(num_vertices);
-                to_idx = irand(num_vertices);
+        /* Create Graph */
+        prev_data = "START";
+        graph_new_vertex(g, strdup(prev_data));
 
-                /* "START" node should not have an indegree */
-                while (to_idx == start_idx)
-                        to_idx = irand(num_vertices);
+        while (t->count) {
+                int tmp_idx =  irand(list->length);
+                char *cur_data = NULL;
 
-                /* "END" node should not have an outdegree */
-                while (from_idx == end_idx)
-                        from_idx = irand(num_vertices);
+                cur_data = list_get_index(list, tmp_idx);
 
-                /* No loops */
-                while (from_idx == to_idx)
-                        to_idx = irand(num_vertices);
+                if (graph_get_vertex(g, cur_data) == NULL) {
+                        graph_new_vertex(g, strdup(cur_data));
 
-                graph_add_edge(g, arr[from_idx], arr[to_idx], weight);
+                        if ((strcmp(prev_data, "END") == 0) ||
+                            (strcmp(cur_data, "START") == 0)) {
+                                graph_add_edge(g, cur_data, prev_data, irand(edges));
+                                 } else {
+                                graph_add_edge(g, prev_data, cur_data, irand(edges));
+                                 }
+                        graph_delete_vertex(t, cur_data);
+                }
+
+                prev_data = cur_data;
         }
+
+        graph_free(t);
+        list_free(list);
 
         return g;
 }
@@ -111,6 +126,7 @@ int main(int argc, char **argv)
 
         int i;
         struct sockaddr_in clientname;
+        Graph *g;
 #ifdef MACOSX
         unsigned int size;
 #else
@@ -151,7 +167,6 @@ int main(int argc, char **argv)
                         if (FD_ISSET(i, &read_fd_set)) {
                                 if (i == server_sock) { /* New connection */
                                         int new;
-                                        Graph *g;
 
                                         size = sizeof(clientname);
                                         new = accept(server_sock,
@@ -165,6 +180,8 @@ int main(int argc, char **argv)
                                                 inet_ntoa(clientname.sin_addr), ntohs(clientname.sin_port));
                                         g = generate_graph(max_edge);
                                         graph_print(g);
+                                        graph_free(g);
+                                        g = NULL;
                                         write_to_socket(new, START, strlen(START));
                                         FD_SET(new, &active_fd_set);
                                 } else {         /* Existing connection */

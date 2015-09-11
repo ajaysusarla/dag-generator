@@ -1,7 +1,6 @@
 * Graph Generation
   - check for existing weights before adding an edge
 * Graph
-   - complete implementation of graph_free()
    - Delete Edge
    - Shortest Path
    - Longest Path
