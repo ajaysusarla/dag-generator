@@ -68,7 +68,9 @@ Graph *generate_graph(int edges)
         list = list_init();
 
         /* Select a random number of vertices */
-        num_vertices = irand(MAX_VERTICES);
+        num_vertices = 0;
+        while (num_vertices == 0)
+                num_vertices = irand(MAX_VERTICES);
 
         /* Create data for vertices */
         for (i = 0; i < num_vertices; i++) {
