@@ -184,7 +184,7 @@ char * list_remove(List *list, int index)
 char *list_get_index(List *list, int index)
 {
         Node *walker = NULL;
-        int count;
+        int count = 0;
 
         if (!list) {
                 return NULL;
@@ -197,8 +197,6 @@ char *list_get_index(List *list, int index)
         walker = list->first;
         if (index == 0)
                 return walker->data;
-
-        count = 1;
 
         while (walker) {
                 if (count == index)

@@ -90,7 +90,7 @@ Graph *generate_graph(int edges)
         }
 
         list_append(list, strdup("END"));
-
+        graph_new_vertex(t, strdup("END"));
 
         /* Max edges */
         max_edges = num_vertices * edges;
@@ -104,7 +104,7 @@ Graph *generate_graph(int edges)
                 char *cur_data = NULL;
                 Vertex *v;
 
-                while ((v =graph_get_vertex(g, prev_data)) && (v->outdegree > edges)) {
+                while ((v = graph_get_vertex(g, prev_data)) && (v->outdegree > edges)) {
                         prev_data = list_get_index(list, irand(list->length));
                 }
 
