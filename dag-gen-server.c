@@ -55,11 +55,57 @@ static void cleanup()
         return;
 }
 
-Graph *generate_graph(int edges)
+static void complete_graph(Graph *g)
+{
+        Vertex *v;
+
+        v = g->first;
+
+        while (v) {
+                int i;
+
+                for (i = 0; i < g->max_edges; i++) {
+                        if (v->edges[i] != NULL) {
+                                if (v->edges[i]->dest->outdegree == 0) {
+                                        graph_add_edge(g, v->edges[i]->dest->data,
+                                                       "END", 0);
+                                }
+                        }
+                }
+
+                v = v->next;
+        }
+}
+
+static void add_random_edges(List *l, Graph *g, int edge_count, int weight)
+{
+        int i;
+
+        for (i = 0; i < edge_count; i++) {
+                char *vert1;
+                char *vert2;
+                int tmp_idx;
+                int ret;
+
+                tmp_idx = irand(l->length);
+                vert1 = list_get_index(l, tmp_idx);
+                while (strcmp(vert1, "END") == 0)
+                        vert1 = list_get_index(l, irand(l->length));
+
+                vert2 = list_get_index(l, tmp_idx);
+                while ((strcmp(vert2, "START") == 0) ||
+                       (strcmp(vert2, vert1) == 0))
+                        vert2 = list_get_index(l, irand(l->length));
+
+                ret = graph_add_edge(g, vert1, vert2, irand(weight));
+        }
+}
+
+static Graph *generate_graph(int edges)
 {
         Graph *g, *t;
         List *list = NULL;
-        int num_vertices, i, max_edges;
+        int num_vertices, i, max_edges, edge_count = 0;
         char *prev_data;
 
         g = graph_init(NULL, edges);
@@ -100,12 +146,21 @@ Graph *generate_graph(int edges)
         graph_new_vertex(g, strdup(prev_data));
 
         while (t->count) {
-                int tmp_idx =  irand(list->length);
+                int tmp_idx = irand(list->length);
                 char *cur_data = NULL;
                 Vertex *v;
 
-                while ((v = graph_get_vertex(g, prev_data)) && (v->outdegree > edges)) {
-                        prev_data = list_get_index(list, irand(list->length));
+                v = graph_get_vertex(g, prev_data);
+                if (v->outdegree >= edges) {
+                        Vertex *tmp = g->first;
+
+                        while (tmp) {
+                                if (tmp->outdegree < edges) {
+                                        prev_data = tmp->data;
+                                        break;
+                                }
+                                tmp = tmp->next;
+                        }
                 }
 
                 cur_data = list_get_index(list, tmp_idx);
@@ -116,8 +171,10 @@ Graph *generate_graph(int edges)
                         if ((strcmp(prev_data, "END") == 0) ||
                             (strcmp(cur_data, "START") == 0)) {
                                 graph_add_edge(g, cur_data, prev_data, irand(edges));
+                                edge_count++;
                         } else {
                                 graph_add_edge(g, prev_data, cur_data, irand(edges));
+                                edge_count++;
                         }
                         graph_delete_vertex(t, cur_data);
                 }
@@ -125,11 +182,14 @@ Graph *generate_graph(int edges)
                 prev_data = cur_data;
         }
 
+        add_random_edges(list, g, irand(max_edges - edge_count), edges);
+        complete_graph(g);
         graph_free(t);
         list_free(list);
 
         return g;
 }
+
 
 int main(int argc, char **argv)
 {

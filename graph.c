@@ -262,7 +262,7 @@ int graph_add_edge(Graph *graph, void *from, void *to, int weight)
                 return -2;
         }
 
-        if (v_from->outdegree + 1 >= graph->max_edges) {
+        if (v_from->outdegree >= graph->max_edges) {
                 free(e_new);
                 e_new = NULL;
                 return -1;
