@@ -84,18 +84,16 @@ static void add_random_edges(List *l, Graph *g, int edge_count, int weight)
         for (i = 0; i < edge_count; i++) {
                 char *vert1;
                 char *vert2;
-                int tmp_idx;
                 int ret;
 
-                tmp_idx = irand(l->length);
-                vert1 = list_get_index(l, tmp_idx);
-                while (strcmp(vert1, "END") == 0)
+                do {
                         vert1 = list_get_index(l, irand(l->length));
+                } while (strcmp(vert1, "END") == 0);
 
-                vert2 = list_get_index(l, tmp_idx);
-                while ((strcmp(vert2, "START") == 0) ||
-                       (strcmp(vert2, vert1) == 0))
+                do {
                         vert2 = list_get_index(l, irand(l->length));
+                }  while ((strcmp(vert2, "START") == 0) ||
+                          (strcmp(vert2, vert1) == 0));
 
                 ret = graph_add_edge(g, vert1, vert2, irand(weight));
         }
@@ -114,22 +112,23 @@ static Graph *generate_graph(int edges)
         list = list_init();
 
         /* Select a random number of vertices */
-        num_vertices = 0;
-        while (num_vertices == 0)
+        do {
                 num_vertices = irand(MAX_VERTICES);
+        } while (num_vertices == 0);
+
 
         /* Create data for vertices */
         for (i = 0; i < num_vertices; i++) {
                 char arr[MAX_STR_LEN] = {0};
-                int n = 0;
+                int n;
 
-                while (n == 0)
+                do {
                         n = irand(100);
+                } while (n == 0);
 
-                sprintf(arr, "%d", irand(100));
-
-                while (list_has_element(list, arr))
+                do {
                         sprintf(arr, "%d", irand(100));
+                } while (list_has_element(list, arr));
 
                 list_append(list, strdup(arr));
                 graph_new_vertex(t, strdup(arr));
