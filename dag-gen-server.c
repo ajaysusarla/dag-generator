@@ -143,6 +143,7 @@ static Graph *generate_graph(int edges)
         /* Create Graph */
         prev_data = "START";
         graph_new_vertex(g, strdup(prev_data));
+        list_append(list, strdup("START"));
 
         while (t->count) {
                 int tmp_idx = irand(list->length);
