@@ -55,6 +55,29 @@ static void cleanup()
         return;
 }
 
+static Vertex * find_first_vertex_with_valid_outdegree(Graph *graph)
+{
+        Vertex *vert = NULL;
+
+        if (!graph->first)
+                return NULL;
+
+        vert = graph->first;
+        while (vert && (graph->compare("START", vert->data) != 0)) {
+                if (vert->outdegree < graph->max_edges)
+                        break;
+
+                vert = vert->next;
+        }
+
+        return vert;
+}
+
+static bool is_graph_cyclic(Graph *g)
+{
+        return FALSE;
+}
+
 static void complete_graph(Graph *g)
 {
         Vertex *v;
@@ -62,16 +85,20 @@ static void complete_graph(Graph *g)
         v = g->first;
 
         while (v) {
-                int i;
+                if ((v->indegree == 0) &&
+                    (g->compare("START", v->data) != 0)) {
+                        Vertex *V;
 
-                for (i = 0; i < g->max_edges; i++) {
-                        if (v->edges[i] != NULL) {
-                                if (v->edges[i]->dest->outdegree == 0) {
-                                        graph_add_edge(g, v->edges[i]->dest->data,
-                                                       "END", 0);
-                                }
-                        }
+                        V = find_first_vertex_with_valid_outdegree(g);
+                        graph_add_edge(g, V->data, v->data, 0);
                 }
+
+                if ((v->outdegree == 0) &&
+                    (g->compare("END", v->data) != 0)) {
+                        graph_add_edge(g, v->data, "END", 0);
+                }
+
+                //printf("%s has %d(I), %d(O)\n", v->data, v->indegree, v->outdegree);
 
                 v = v->next;
         }

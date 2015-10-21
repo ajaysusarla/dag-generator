@@ -30,6 +30,12 @@ double drand(void);
 #define END "END"
 #define RESET "RESET"
 
+
+typedef enum Bool {
+        FALSE = 0,
+        TRUE
+} bool;
+
 int read_from_socket(int sockfd, char *buffer);
 int write_to_socket(int sockfd, char *buffer, int len);
 int create_server_socket(uint16_t port);
