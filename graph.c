@@ -104,6 +104,8 @@ int graph_new_vertex(Graph *graph, void *data)
         v_new->indegree = 0;
         v_new->outdegree = 0;
         v_new->edges = NULL;
+        v_new->processed = FALSE;
+        v_new->visited = FALSE;
 
         v_new->edges = malloc(graph->max_edges * sizeof(Edge));
         if (!v_new->edges) {

@@ -14,6 +14,8 @@
  *
  */
 
+#include "utils.h"
+
 #ifndef _GRAPH_H_
 #define _GRAPH_H_
 
@@ -35,6 +37,8 @@ struct vertex {
         void *data;
         int indegree;
         int outdegree;
+        bool processed;
+        bool visited;
         Edge **edges;
 };
 

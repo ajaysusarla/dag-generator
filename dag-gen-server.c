@@ -73,9 +73,61 @@ static Vertex * find_first_vertex_with_valid_outdegree(Graph *graph)
         return vert;
 }
 
+static bool is_cyclic(Vertex *v, Graph *g)
+{
+        if (g->compare("END", v->data) == 0)
+                return FALSE;
+
+        if (v->visited == FALSE) {
+                int i;
+
+                v->visited = TRUE;
+                v->processed = TRUE;
+
+                for (i = 0; i < g->max_edges; i++) {
+                        if (v->edges[i] != NULL) {
+                                if ((v->edges[i]->dest->visited == FALSE) && is_cyclic(v->edges[i]->dest, g)) {
+                                        printf(">> Cycle:%s --(%d) --> %s\n", v->data, i, v->edges[i]->dest->data);
+                                        return TRUE;
+                                } else if (v->edges[i]->dest->processed == TRUE) {
+                                        printf(">>> Cycle:%s --(%d) --> %s\n", v->data, i, v->edges[i]->dest->data);
+                                        return TRUE;
+                                }
+                        }
+                }
+        }
+
+        v->processed = FALSE;
+
+        return FALSE;
+}
+
 static bool is_graph_cyclic(Graph *g)
 {
-        return FALSE;
+        Vertex *v;
+        bool ret = FALSE;
+
+        v = g->first;
+
+        /* Set processed flags for each node to FALSE */
+        while (v) {
+                v->processed = FALSE;
+                v->visited = FALSE;
+                v = v->next;
+        }
+
+        v = g->first;
+
+        while(v) {
+                if (is_cyclic(v, g) == TRUE) {
+                        ret = TRUE;
+                        break;
+                }
+
+                v = v->next;
+        }
+
+        return ret;
 }
 
 static void complete_graph(Graph *g)
@@ -211,6 +263,10 @@ static Graph *generate_graph(int edges)
 
         add_random_edges(list, g, irand(max_edges - edge_count), edges);
         complete_graph(g);
+        if (is_graph_cyclic(g) == TRUE)
+                printf(">>> GRAPH IS CYCLIC!\n");
+        else
+                printf(">>> GRAPH IS ACYCLIC!\n");
         graph_free(t);
         list_free(list);
 
