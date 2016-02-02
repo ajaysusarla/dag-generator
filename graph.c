@@ -212,6 +212,33 @@ Vertex * graph_get_vertex(Graph *graph, void *data)
 }
 
 /*
+ * Function: graph_delete_edge()
+ * Arguments :
+ * Return    :
+ *             1  - success
+ *             -1 - degree of vertex not 0
+ *             -2 - from vertex not found
+ *             -3 - to vertex not found
+ */
+int graph_delete_edge(Vertex *from, Vertex *to, int weight)
+{
+
+        if (from->edges[weight] != NULL) {
+                Edge *e;
+                e = from->edges[weight];
+                e->dest = NULL;
+                free(e);
+                e = NULL;
+                from->edges[weight] = NULL;
+        }
+
+        --from->outdegree;
+        --to->indegree;
+
+        return 1;
+}
+
+/*
  * Function: graph_add_edge()
  * Arguments :
  * Return    :

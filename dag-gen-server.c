@@ -130,6 +130,70 @@ static bool is_graph_cyclic(Graph *g)
         return ret;
 }
 
+static bool prune(Vertex *v, Graph *g)
+{
+        if (g->compare("END", v->data) == 0)
+                return FALSE;
+
+        if (v->visited == FALSE) {
+                int i;
+
+                v->visited = TRUE;
+                v->processed = TRUE;
+
+                for (i = 0; i < g->max_edges; i++) {
+                        if (v->edges[i] != NULL) {
+                                if (v->edges[i]->dest->visited == FALSE) {
+                                        printf("\t[%s]\n", v->edges[i]->dest->data);
+                                        prune(v->edges[i]->dest, g);
+                                } else if (v->edges[i]->dest->processed == TRUE) {
+                                        printf(">>> Deleting :%s --(%d) --> %s\n", v->data, i, v->edges[i]->dest->data);
+                                        graph_delete_edge(v, v->edges[i]->dest, i);
+                                        graph_add_edge(g, v->data, "END", i);
+                                        //v->visited = FALSE;
+                                        //v->edges[i]->dest->processed = FALSE;
+                                        return TRUE;
+                                }
+                        }
+                }
+        }
+
+        v->processed = FALSE;
+
+        return FALSE;
+}
+
+static void prune_graph(Graph *g)
+{
+        Vertex *v;
+
+        v = g->first;
+
+        printf("# Pruning graph...\n");
+
+        /* Set processed flags for each node to FALSE */
+        while (v) {
+                v->processed = FALSE;
+                v->visited = FALSE;
+                v = v->next;
+        }
+
+        v = graph_get_vertex(g, "START");
+
+        printf("> [%s]\n", v->data);
+        prune(v, g);
+        /*
+        while(v) {
+                printf("> [%s]\n", v->data);
+                prune(v, g);
+                v = v->next;
+        }
+        */
+
+        printf("\n");
+
+}
+
 static void complete_graph(Graph *g)
 {
         Vertex *v;
@@ -262,11 +326,33 @@ static Graph *generate_graph(int edges)
         }
 
         add_random_edges(list, g, irand(max_edges - edge_count), edges);
+
         complete_graph(g);
+
+        graph_print(g);
+        prune_graph(g);
         if (is_graph_cyclic(g) == TRUE)
                 printf(">>> GRAPH IS CYCLIC!\n");
         else
                 printf(">>> GRAPH IS ACYCLIC!\n");
+
+        //printf("^^^^^^^^ COMPLETING GRAPH ^^^^^^^^^^\n");
+
+        /*
+        if (is_graph_cyclic(g) == TRUE) {
+                printf(">>> GRAPH IS CYCLIC!\n");
+                prune_graph(g);
+        } else {
+                printf(">>> GRAPH IS ACYCLIC!\n");
+        }
+        */
+
+        if (is_graph_cyclic(g) == TRUE) {
+                printf(">>> GRAPH IS CYCLIC!\n");
+        } else {
+                printf(">>> GRAPH IS ACYCLIC!\n");
+        }
+
         graph_free(t);
         list_free(list);
 
@@ -334,7 +420,7 @@ int main(int argc, char **argv)
                                         fprintf(stderr, "[DAG Server] Connect from host %s:%d\n",
                                                 inet_ntoa(clientname.sin_addr), ntohs(clientname.sin_port));
                                         g = generate_graph(max_edge);
-                                        graph_print(g);
+                                        //graph_print(g);
                                         graph_free(g);
                                         g = NULL;
                                         write_to_socket(new, START, strlen(START));
