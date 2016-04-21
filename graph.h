@@ -57,5 +57,6 @@ Vertex * graph_get_vertex(Graph *graph, void *data);
 int graph_add_edge(Graph *graph, void *from, void *to, int weight);
 int graph_delete_edge(Vertex *from, Vertex *to, int weight);
 void graph_print(Graph *graph);
+void graph_print_dot(Graph *graph);
 
 #endif  /* _GRAPH_H_ */
