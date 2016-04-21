@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -383,6 +384,9 @@ int main(int argc, char **argv)
                 usage(argv[0]);
                 exit(EXIT_FAILURE);
         }
+
+        /* Initialise random number generator. */
+        srand((unsigned int)getpid() + (unsigned int)time(NULL));
 
         signal(SIGINT, cleanup);
         signal(SIGTERM, cleanup);
