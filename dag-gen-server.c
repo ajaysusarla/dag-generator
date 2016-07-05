@@ -219,8 +219,6 @@ static void complete_graph(Graph *g)
                         graph_add_edge(g, V->data, v->data, 0);
                 }
 
-                //printf("%s has %d(I), %d(O)\n", v->data, v->indegree, v->outdegree);
-
                 v = v->next;
         }
 
@@ -231,8 +229,6 @@ static void complete_graph(Graph *g)
                     (g->compare("END", v->data) != 0)) {
                         graph_add_edge(g, v->data, "END", 0);
                 }
-
-                //printf("%s has %d(I), %d(O)\n", v->data, v->indegree, v->outdegree);
 
                 v = v->next;
         }
@@ -245,7 +241,6 @@ static void add_random_edges(List *l, Graph *g, int edge_count, int weight)
         for (i = 0; i < edge_count; i++) {
                 char *vert1;
                 char *vert2;
-                int ret;
 
                 do {
                         vert1 = list_get_index(l, irand(l->length));
@@ -256,7 +251,7 @@ static void add_random_edges(List *l, Graph *g, int edge_count, int weight)
                 }  while ((strcmp(vert2, "START") == 0) ||
                           (strcmp(vert2, vert1) == 0));
 
-                ret = graph_add_edge(g, vert1, vert2, irand(weight));
+                graph_add_edge(g, vert1, vert2, irand(weight));
         }
 }
 
@@ -428,7 +423,6 @@ int main(int argc, char **argv)
                                         fprintf(stderr, "[DAG Server] Connect from host %s:%d\n",
                                                 inet_ntoa(clientname.sin_addr), ntohs(clientname.sin_port));
                                         g = generate_graph(max_edge);
-                                        //graph_print(g);
                                         graph_free(g);
                                         g = NULL;
                                         write_to_socket(new, START, strlen(START));
