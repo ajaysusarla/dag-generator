@@ -64,7 +64,7 @@ static Vertex * find_first_vertex_with_valid_outdegree(Graph *graph)
                 return NULL;
 
         vert = graph->first;
-        while (vert && (graph->compare("START", vert->data) != 0)) {
+        while (vert) {
                 if (vert->outdegree < graph->max_edges)
                         break;
 
@@ -201,6 +201,15 @@ static void complete_graph(Graph *g)
 
         v = g->first;
 
+        /* Set processed flags for each node to FALSE */
+        while (v) {
+                v->processed = FALSE;
+                v->visited = FALSE;
+                v = v->next;
+        }
+
+        v = g->first;
+
         while (v) {
                 if ((v->indegree == 0) &&
                     (g->compare("START", v->data) != 0)) {
@@ -210,6 +219,14 @@ static void complete_graph(Graph *g)
                         graph_add_edge(g, V->data, v->data, 0);
                 }
 
+                //printf("%s has %d(I), %d(O)\n", v->data, v->indegree, v->outdegree);
+
+                v = v->next;
+        }
+
+        v = g->first;
+
+        while (v) {
                 if ((v->outdegree == 0) &&
                     (g->compare("END", v->data) != 0)) {
                         graph_add_edge(g, v->data, "END", 0);
@@ -279,6 +296,8 @@ static Graph *generate_graph(int edges)
         }
 
         list_append(list, strdup("END"));
+        list_append(list, strdup("START"));
+
         graph_new_vertex(t, strdup("END"));
 
         /* Max edges */
@@ -286,8 +305,9 @@ static Graph *generate_graph(int edges)
 
         /* Create Graph */
         prev_data = "START";
+        /* Add 'START' node only in graph 'g' and not the
+           temporary graph 't'. */
         graph_new_vertex(g, strdup(prev_data));
-        list_append(list, strdup("START"));
 
         while (t->count) {
                 int tmp_idx = irand(list->length);
@@ -326,36 +346,20 @@ static Graph *generate_graph(int edges)
                 prev_data = cur_data;
         }
 
+        printf(">> Generated graph:\n");
+        graph_print_dot(g);
+
+        /* Add random edges */
         add_random_edges(list, g, irand(max_edges - edge_count), edges);
+
+        printf(">> After adding random edges:\n");
+        graph_print_dot(g);
 
         complete_graph(g);
 
-        graph_print(g);
-        prune_graph(g);
-        if (is_graph_cyclic(g) == TRUE)
-                printf(">>> GRAPH IS CYCLIC!\n");
-        else
-                printf(">>> GRAPH IS ACYCLIC!\n");
+        printf(">> After completing:\n");
 
-        //printf("^^^^^^^^ COMPLETING GRAPH ^^^^^^^^^^\n");
-
-        /*
-        if (is_graph_cyclic(g) == TRUE) {
-                printf(">>> GRAPH IS CYCLIC!\n");
-                prune_graph(g);
-        } else {
-                printf(">>> GRAPH IS ACYCLIC!\n");
-        }
-        */
-
-        if (is_graph_cyclic(g) == TRUE) {
-                printf(">>> GRAPH IS CYCLIC!\n");
-        } else {
-                printf(">>> GRAPH IS ACYCLIC!\n");
-        }
-
-        graph_free(t);
-        list_free(list);
+        graph_print_dot(g);
 
         return g;
 }
