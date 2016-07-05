@@ -1,2 +1,5 @@
 Server : Generates a DAG
 Client : discovers and builds the DAG
+
+
+dot-notation can be visualised here: http://sandbox.kidstrythisathome.com/erdos/
