@@ -30,12 +30,15 @@ dag-gen-server: dag-gen-server.c graph.o utils.o list.o
 		utils.o \
 		-o dag-gen-server
 
-dag-discover: dag-discover.c graph.o utils.o
+dag-discover: dag-discover.c graph.o graph_adj.o utils.o
 	$(CC) $(CFLAGS) -c dag-discover.c
 	$(CC) $(CFLAGS) $(LIBS) graph.o dag-discover.o utils.o -o dag-discover
 
 graph.o: graph.c graph.h
 	$(CC) $(CFLAGS) -c graph.c
+
+graph_adj.o: graph_adj.c graph_adj.h
+	$(CC) $(CFLAGS) -c graph_adj.c
 
 list.o: list.c list.h
 	$(CC) $(CFLAGS) -c list.c

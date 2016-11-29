@@ -378,6 +378,117 @@ static Graph *generate_graph(int edges)
         return g;
 }
 
+static void generate_graph_adj_matrix(int edges)
+{
+        Graph *g;
+        int num_vertices, max_edges, i, j;
+        int **adj_arr;
+        List *list = NULL;
+
+        /* Select a random number of vertices */
+        do {
+                num_vertices = irand(MAX_VERTICES);
+        } while (num_vertices == 0);
+
+        printf("Generating graph with %d nodes.\n", num_vertices);
+
+        list = list_init();
+        g = graph_init(NULL, edges);
+
+        list_append(list, strdup("START"));
+        graph_new_vertex(g, strdup("START"));
+        /* Create data for vertices */
+        for (i = 0; i < num_vertices; i++) {
+                char arr[MAX_STR_LEN] = {0};
+                int n;
+
+                do {
+                        n = irand(100);
+                } while (n == 0);
+
+                do {
+                        sprintf(arr, "%d", irand(100));
+                } while (list_has_element(list, arr));
+
+                list_append(list, strdup(arr));
+                graph_new_vertex(g, strdup(arr));
+        }
+
+        /* Account for 'START' and 'END' */
+        list_append(list, strdup("END"));
+        graph_new_vertex(g, strdup("END"));
+
+        num_vertices += 2;
+
+        /* Print Vertices data */
+        list_print(list);
+
+        /* Max edges */
+        max_edges = num_vertices * edges;
+
+        /* Allocate our adjacency matrix */
+        adj_arr = malloc(sizeof(int *) * num_vertices);
+        if (!adj_arr) {
+                fprintf(stderr, "Memory allocation failure!\n");
+                exit(EXIT_FAILURE);
+        }
+
+        for (i = 0; i < num_vertices; i++) {
+                adj_arr[i] = malloc(sizeof(int) * num_vertices);
+                if (!adj_arr[i]) {
+                        fprintf(stderr, "Memory allocation failure!\n");
+                        exit(EXIT_FAILURE);
+                }
+        }
+
+        /* Initialise adj matrix */
+        for (i = 0; i < num_vertices; i++) {
+                for (j = 0; j < num_vertices; j++) {
+                        adj_arr[i][j] = -1;
+                }
+        }
+
+        /* Add edges */
+        while (1) {
+                /* TODO */
+                break;
+        }
+
+        /* Make it a directed graph, by removing elements from
+         * the bottom half of the adjacency matrix
+         */
+        for (i = 0; i < num_vertices; i++) {
+                for (j = 0; j <= i; j++) {
+                        adj_arr[i][j] = -1;
+                }
+        }
+
+        /* Print adj matrix */
+        for (i = 0; i < num_vertices; i++) {
+                for (j = 0; j < num_vertices; j++) {
+                        printf("%4d", adj_arr[i][j]);
+                }
+                printf("\n");
+        }
+
+        /* Print outdegree */
+        for (i = 0; i < num_vertices; i++) {
+                int deg = 0;
+                for (j = 0; j < num_vertices; j++) {
+                        if (adj_arr[i][j] != -1)
+                                deg++;
+                }
+                printf("Outdegree of %2d is %2d\n", i, deg);
+        }
+
+        /* Free adjacency matrix */
+        for (i = 0; i < num_vertices; i++) {
+                free(adj_arr[i]);
+                adj_arr[i] = NULL;
+        }
+        free(adj_arr);
+        adj_arr = NULL;
+}
 
 int main(int argc, char **argv)
 {
@@ -441,9 +552,12 @@ int main(int argc, char **argv)
                                         }
                                         fprintf(stderr, "[DAG Server] Connect from host %s:%d\n",
                                                 inet_ntoa(clientname.sin_addr), ntohs(clientname.sin_port));
+                                        /*
                                         g = generate_graph(max_edge);
                                         graph_free(g);
                                         g = NULL;
+                                        */
+                                        generate_graph_adj_matrix(max_edge);
                                         write_to_socket(new, START, strlen(START));
                                         FD_SET(new, &active_fd_set);
                                 } else {         /* Existing connection */
