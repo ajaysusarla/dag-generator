@@ -3,3 +3,6 @@ Client : discovers and builds the DAG
 
 
 dot-notation can be visualised here: http://sandbox.kidstrythisathome.com/erdos/
+
+Alternatively, install a tool like `dotty` locally and view the dot files.
+

@@ -88,10 +88,8 @@ static bool is_cyclic(Vertex *v, Graph *g)
                 for (i = 0; i < g->max_edges; i++) {
                         if (v->edges[i] != NULL) {
                                 if ((v->edges[i]->dest->visited == FALSE) && is_cyclic(v->edges[i]->dest, g)) {
-                                        printf(">> Cycle:%s --(%d) --> %s\n", v->data, i, v->edges[i]->dest->data);
                                         return TRUE;
                                 } else if (v->edges[i]->dest->processed == TRUE) {
-                                        printf(">>> Cycle:%s --(%d) --> %s\n", v->data, i, v->edges[i]->dest->data);
                                         return TRUE;
                                 }
                         }
@@ -195,7 +193,7 @@ static void prune_graph(Graph *g)
 
 }
 
-static void complete_graph(Graph *g)
+static void complete_graph(Graph *g, int weight)
 {
         Vertex *v;
 
@@ -216,7 +214,8 @@ static void complete_graph(Graph *g)
                         Vertex *V;
 
                         V = find_first_vertex_with_valid_outdegree(g);
-                        graph_add_edge(g, V->data, v->data, 0);
+                        if (v != V)
+                                graph_add_edge(g, V->data, v->data, irand(weight));
                 }
 
                 v = v->next;
@@ -227,7 +226,7 @@ static void complete_graph(Graph *g)
         while (v) {
                 if ((v->outdegree == 0) &&
                     (g->compare("END", v->data) != 0)) {
-                        graph_add_edge(g, v->data, "END", 0);
+                        graph_add_edge(g, v->data, "END", irand(weight));
                 }
 
                 v = v->next;
@@ -241,6 +240,7 @@ static void add_random_edges(List *l, Graph *g, int edge_count, int weight)
         for (i = 0; i < edge_count; i++) {
                 char *vert1;
                 char *vert2;
+                int wt = irand(weight);
 
                 do {
                         vert1 = list_get_index(l, irand(l->length));
@@ -251,7 +251,14 @@ static void add_random_edges(List *l, Graph *g, int edge_count, int weight)
                 }  while ((strcmp(vert2, "START") == 0) ||
                           (strcmp(vert2, vert1) == 0));
 
-                graph_add_edge(g, vert1, vert2, irand(weight));
+                printf("** random edge: %s -> (%d) -> %s\n", vert1, wt, vert2);
+                graph_add_edge(g, vert1, vert2, wt);
+                if (is_graph_cyclic(g) == TRUE) {
+                        printf("||| Deleting random edge: %s -> (%d) -> %s\n", vert1, wt, vert2);
+                        graph_delete_edge(graph_get_vertex(g, vert1),
+                                          graph_get_vertex(g, vert2),
+                                          wt);
+                }
         }
 }
 
@@ -261,6 +268,7 @@ static Graph *generate_graph(int edges)
         List *list = NULL;
         int num_vertices, i, max_edges, edge_count = 0;
         char *prev_data;
+        FILE *fp;
 
         g = graph_init(NULL, edges);
         t = graph_init(NULL, edges);
@@ -330,11 +338,10 @@ static Graph *generate_graph(int edges)
                         if ((strcmp(prev_data, "END") == 0) ||
                             (strcmp(cur_data, "START") == 0)) {
                                 graph_add_edge(g, cur_data, prev_data, irand(edges));
-                                edge_count++;
                         } else {
                                 graph_add_edge(g, prev_data, cur_data, irand(edges));
-                                edge_count++;
                         }
+                        edge_count++;
                         graph_delete_vertex(t, cur_data);
                 }
 
@@ -342,20 +349,32 @@ static Graph *generate_graph(int edges)
         }
 
         printf(">> Generated graph:\n");
-        graph_print_dot(g);
+        print_graph(g);
 
         /* Add random edges */
+        printf("Current edges: %d\n", edge_count);
+        printf("Max edges: %d\n", max_edges);
+        printf("Adding %d random edges.\n", (max_edges - edge_count));
         add_random_edges(list, g, irand(max_edges - edge_count), edges);
 
         printf(">> After adding random edges:\n");
-        graph_print_dot(g);
+        print_graph(g);
 
-        complete_graph(g);
+        complete_graph(g, edges);
 
         printf(">> After completing:\n");
 
-        graph_print_dot(g);
+        print_graph(g);
 
+        fp = fopen("output.dot", "w");
+        if (!fp) {
+                fprintf(stderr, "Could not create file\n");
+                exit(EXIT_FAILURE);
+        }
+        graph_print_dot(g, fp);
+
+        fflush(fp);
+        fclose(fp);
         return g;
 }
 

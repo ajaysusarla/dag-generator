@@ -2,3 +2,4 @@
 dag-discover
 dag-gen-server
 *.~
+*.dot

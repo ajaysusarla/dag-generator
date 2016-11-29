@@ -44,7 +44,7 @@ utils.o: utils.c utils.h
 	$(CC) $(CFLAGS) -c utils.c
 
 clean:
-	rm -rf *.o dag-gen-server dag-discover
+	rm -rf *.o dag-gen-server dag-discover *.dot
 
 .PHONY: check-syntax
 

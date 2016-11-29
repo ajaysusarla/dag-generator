@@ -26,7 +26,7 @@ typedef struct edge Edge;
 /* Graph */
 struct graph {
         int count;
-        int max_edges;
+        int max_edges;          /* Max edges per Vertex */
         Vertex *first;
         int (* compare)(void *arg1, void *arg2);
 };
@@ -57,6 +57,12 @@ Vertex * graph_get_vertex(Graph *graph, void *data);
 int graph_add_edge(Graph *graph, void *from, void *to, int weight);
 int graph_delete_edge(Vertex *from, Vertex *to, int weight);
 void graph_print(Graph *graph);
-void graph_print_dot(Graph *graph);
+void graph_print_dot(Graph *graph, FILE *fp);
+
+
+#define print_graph(g) do {                     \
+                graph_print_dot(g, NULL);       \
+                fflush(stdout);                 \
+        } while(0)                              \
 
 #endif  /* _GRAPH_H_ */

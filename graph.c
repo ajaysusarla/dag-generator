@@ -354,20 +354,23 @@ void graph_print(Graph *graph)
         }
 }
 
-void graph_print_dot(Graph *graph)
+void graph_print_dot(Graph *graph, FILE *fp)
 {
         Vertex *v;
 
         v = graph->first;
 
-        printf("digraph {\n");
+        if (fp == NULL)
+                fp = stdout;
+
+        fprintf(fp, "digraph {\n");
         while (v) {
                 int i;
 
                 for (i = 0; i < graph->max_edges; i++) {
                         if (v->edges[i] != NULL) {
-                                printf("%s -> %s[label=%d];\n", (char *)v->data,
-                                       (char*)v->edges[i]->dest->data,
+                                fprintf(fp, "%s -> %s[label=%d];\n", (char *)v->data,
+                                        (char*)v->edges[i]->dest->data,
                                         v->edges[i]->weight);
                         }
 
@@ -377,5 +380,5 @@ void graph_print_dot(Graph *graph)
                 v = v->next;
         }
 
-        printf("}\n");
+        fprintf(fp, "}\n");
 }
