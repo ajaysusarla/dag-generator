@@ -37,6 +37,7 @@ struct vertex {
         void *data;
         int indegree;
         int outdegree;
+        int index;
         bool processed;
         bool visited;
         Edge **edges;
@@ -54,6 +55,7 @@ void graph_free(Graph *graph);
 int graph_new_vertex(Graph *graph, void *data);
 int graph_delete_vertex(Graph *graph, void *data);
 Vertex * graph_get_vertex(Graph *graph, void *data);
+Vertex * graph_get_vertex_by_index(Graph *graph, int index);
 int graph_add_edge(Graph *graph, void *from, void *to, int weight);
 int graph_delete_edge(Vertex *from, Vertex *to, int weight);
 void graph_print(Graph *graph);

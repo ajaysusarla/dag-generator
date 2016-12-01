@@ -103,6 +103,7 @@ int graph_new_vertex(Graph *graph, void *data)
         v_new->data = data;
         v_new->indegree = 0;
         v_new->outdegree = 0;
+        v_new->index = -1;
         v_new->edges = NULL;
         v_new->processed = FALSE;
         v_new->visited = FALSE;
@@ -119,6 +120,7 @@ int graph_new_vertex(Graph *graph, void *data)
 
 
         ++graph->count;
+        v_new->index = graph->count - 1;
 
         /* Insert node into graph */
         v_cur = graph->first;
@@ -212,6 +214,32 @@ Vertex * graph_get_vertex(Graph *graph, void *data)
 }
 
 /*
+ * Function: graph_get_vertex_by_index()
+ * Arguments :
+ * Return    : Finds and returns a vertex at index `index`,
+ *             NULL otherwise
+ */
+Vertex * graph_get_vertex_by_index(Graph *graph, int index)
+{
+        Vertex *vert = NULL;
+
+        if (!graph->first)
+                return NULL;
+
+        vert = graph->first;
+
+        while(vert) {
+                if (vert->index == index)
+                        break;
+
+                vert = vert->next;
+        }
+
+        /* Found the vertex */
+        return vert;
+}
+
+/*
  * Function: graph_delete_edge()
  * Arguments :
  * Return    :
@@ -230,10 +258,10 @@ int graph_delete_edge(Vertex *from, Vertex *to, int weight)
                 free(e);
                 e = NULL;
                 from->edges[weight] = NULL;
-        }
 
-        --from->outdegree;
-        --to->indegree;
+                --from->outdegree;
+                --to->indegree;
+        }
 
         return 1;
 }

@@ -378,6 +378,234 @@ static Graph *generate_graph(int edges)
         return g;
 }
 
+static void generate_graph_adj_matrix(int edges)
+{
+        Graph *g;
+        Vertex *v;
+        int num_vertices, max_edges, i, j;
+        int **adj_arr;
+        List *list = NULL;
+
+        /* Select a random number of vertices */
+        do {
+                num_vertices = irand(MAX_VERTICES);
+        } while (num_vertices == 0);
+
+        printf("Generating graph with %d nodes.\n", num_vertices);
+
+        list = list_init();
+        g = graph_init(NULL, edges);
+
+        list_append(list, strdup("START"));
+        graph_new_vertex(g, strdup("START"));
+        /* Create data for vertices */
+        for (i = 0; i < num_vertices; i++) {
+                char arr[MAX_STR_LEN] = {0};
+                int n;
+
+                do {
+                        n = irand(100);
+                } while (n == 0);
+
+                do {
+                        sprintf(arr, "%d", irand(100));
+                } while (list_has_element(list, arr));
+
+                list_append(list, strdup(arr));
+                graph_new_vertex(g, strdup(arr));
+        }
+
+        /* Account for 'START' and 'END' */
+        list_append(list, strdup("END"));
+        graph_new_vertex(g, strdup("END"));
+
+        num_vertices += 2;
+
+        /* Print Vertices data */
+        list_print(list);
+
+        /* Max edges */
+        max_edges = num_vertices * edges;
+
+        /* Allocate our adjacency matrix */
+        adj_arr = malloc(sizeof(int *) * num_vertices);
+        if (!adj_arr) {
+                fprintf(stderr, "Memory allocation failure!\n");
+                exit(EXIT_FAILURE);
+        }
+
+        for (i = 0; i < num_vertices; i++) {
+                adj_arr[i] = malloc(sizeof(int) * num_vertices);
+                if (!adj_arr[i]) {
+                        fprintf(stderr, "Memory allocation failure!\n");
+                        exit(EXIT_FAILURE);
+                }
+        }
+
+        /* Initialise adj matrix */
+        for (i = 0; i < num_vertices; i++) {
+                for (j = 0; j < num_vertices; j++) {
+                        adj_arr[i][j] = -1;
+                }
+        }
+
+        /* Generate random edges
+           XXX: This is *NOT* random enough. XXX
+         */
+        for (i = 0; i < num_vertices; i++) {
+                int odeg = 0;
+                for (j = i + 1; j < num_vertices && odeg < edges; j++) {
+                        adj_arr[i][j] = irand(edges + 1) - 1;
+                        if (adj_arr[i][j] != -1)
+                                odeg++;
+                }
+        }
+
+        /* Add edges */
+        for (i = 0; i < num_vertices; i++) {
+                for (j = 0; j < num_vertices; j++) {
+                        if (adj_arr[i][j] != -1) {
+                                Vertex *from, *to;
+
+                                from = graph_get_vertex_by_index(g, i);
+                                to = graph_get_vertex_by_index(g, j);
+                                graph_add_edge(g, from->data, to->data, adj_arr[i][j]);
+                        }
+                }
+        }
+
+        /* Prune */
+        printf("===============\n");
+        v = g->first;
+        while (v) {
+                if (v->indegree == 0) {
+                        int i;
+                        if (g->compare("START", v->data) != 0) {
+                                printf("%s in(%d), out(%d)\n", (char *)v->data, v->indegree, v->outdegree);
+                                for (i = 0; i < edges; i++) {
+                                        graph_delete_edge(v, v->edges[i]->dest->data, v->edges[i]->weight);
+                                }
+
+                                printf("Deleting %s\n", (char *)v->data);
+                                graph_delete_vertex(g, v->data);
+                        }
+                }
+
+                if (v->outdegree == 0) {
+                        if (g->compare("END", v->data) != 0)
+                                graph_add_edge(g, v->data, "END", irand(edges));
+                }
+
+                v = v->next;
+        }
+        printf("===============\n");
+
+
+        /* Print adj matrix */
+        for (i = 0; i < num_vertices; i++) {
+                for (j = 0; j < num_vertices; j++) {
+                        printf("%4d", adj_arr[i][j]);
+                }
+                printf("\n");
+        }
+
+        print_graph(g);
+
+        /* Free adjacency matrix */
+        for (i = 0; i < num_vertices; i++) {
+                free(adj_arr[i]);
+                adj_arr[i] = NULL;
+        }
+        free(adj_arr);
+        adj_arr = NULL;
+}
+
+
+void swap(int *a, int *b)
+{
+        int t;
+
+        t = *a;
+        *a = *b;
+        *b = t;
+}
+
+static void generate_dag(int edges)
+{
+        int num_vertices, max_edges, i, j, count;
+        int *adj_arr, *dag;
+
+        /* Select a random number of vertices */
+        do {
+                num_vertices = irand(MAX_VERTICES);
+        } while (num_vertices == 0);
+
+        printf("Generating graph with %d nodes.\n", num_vertices);
+
+        /* Max edges */
+        max_edges = num_vertices * edges;
+
+        adj_arr = (int *)malloc(sizeof(int) * num_vertices * num_vertices);
+        if (adj_arr == NULL) {
+                fprintf(stderr, "Error allocating memory\n");
+                exit(EXIT_FAILURE);
+        }
+
+        dag = (int *)malloc(sizeof(int) * num_vertices);
+        if (dag == NULL) {
+                fprintf(stderr, "Error allocating memory\n");
+                free(adj_arr);
+                exit(EXIT_FAILURE);
+        }
+
+        for (i = 0; i < num_vertices; i++) {
+                dag[i] = i;
+        }
+
+        /* Permute */
+        for (i = 0; i < num_vertices; i++) {
+                swap(dag + i + irand(num_vertices - i), dag + i);
+        }
+
+        for (count = 0; count < num_vertices; ) {
+                int pos;
+
+                if ((i = irand(num_vertices)) == (j = irand(num_vertices)))
+                        continue;
+
+                if (i > j)
+                        swap (&i, &j);
+                i = dag[i];
+                j = dag[j];
+
+                pos = i * num_vertices + j;
+
+                if (!adj_arr[pos]) {
+                        adj_arr[pos] = irand(edges);
+                        count++;
+                }
+                printf(">> count(%d): pos(%d): i(%d): j(%d)\n",
+                       count, pos, i, j);
+        }
+
+        /*
+        printf("The DAG:\n");
+        for (i = 0; i < num_vertices; i++) {
+                printf("%d : %d\n", i, dag[i]);
+        }
+        */
+
+        printf("The Adjacency Matrix:\n");
+        for (i = 1; i <= num_vertices; i++) {
+                for (j = i + 1; j <= num_vertices; j++) {
+                        int pos = (i - 1) * num_vertices + j - 1;
+                        printf("%d -> %d :(%d): %d\n", i, j, pos, adj_arr[pos]);
+                }
+        }
+
+        free(adj_arr);
+        free(dag);
+}
 
 int main(int argc, char **argv)
 {
@@ -441,9 +669,13 @@ int main(int argc, char **argv)
                                         }
                                         fprintf(stderr, "[DAG Server] Connect from host %s:%d\n",
                                                 inet_ntoa(clientname.sin_addr), ntohs(clientname.sin_port));
+                                        /*
                                         g = generate_graph(max_edge);
                                         graph_free(g);
                                         g = NULL;
+                                        */
+                                        generate_graph_adj_matrix(max_edge);
+                                        //generate_dag(max_edge);
                                         write_to_socket(new, START, strlen(START));
                                         FD_SET(new, &active_fd_set);
                                 } else {         /* Existing connection */
