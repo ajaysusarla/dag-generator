@@ -129,110 +129,6 @@ static bool is_graph_cyclic(Graph *g)
         return ret;
 }
 
-static bool prune(Vertex *v, Graph *g)
-{
-        if (g->compare("END", v->data) == 0)
-                return FALSE;
-
-        if (v->visited == FALSE) {
-                int i;
-
-                v->visited = TRUE;
-                v->processed = TRUE;
-
-                for (i = 0; i < g->max_edges; i++) {
-                        if (v->edges[i] != NULL) {
-                                if (v->edges[i]->dest->visited == FALSE) {
-                                        printf("\t[%s]\n", v->edges[i]->dest->data);
-                                        prune(v->edges[i]->dest, g);
-                                } else if (v->edges[i]->dest->processed == TRUE) {
-                                        printf(">>> Deleting :%s --(%d) --> %s\n", v->data, i, v->edges[i]->dest->data);
-                                        graph_delete_edge(v, v->edges[i]->dest, i);
-                                        graph_add_edge(g, v->data, "END", i);
-                                        //v->visited = FALSE;
-                                        //v->edges[i]->dest->processed = FALSE;
-                                        return TRUE;
-                                }
-                        }
-                }
-        }
-
-        v->processed = FALSE;
-
-        return FALSE;
-}
-
-static void prune_graph(Graph *g)
-{
-        Vertex *v;
-
-        v = g->first;
-
-        printf("# Pruning graph...\n");
-
-        /* Set processed flags for each node to FALSE */
-        while (v) {
-                v->processed = FALSE;
-                v->visited = FALSE;
-                v = v->next;
-        }
-
-        v = graph_get_vertex(g, "START");
-
-        printf("> [%s]\n", v->data);
-        prune(v, g);
-        /*
-        while(v) {
-                printf("> [%s]\n", v->data);
-                prune(v, g);
-                v = v->next;
-        }
-        */
-
-        printf("\n");
-
-}
-
-static void complete_graph(Graph *g, int weight)
-{
-        Vertex *v;
-
-        v = g->first;
-
-        /* Set processed flags for each node to FALSE */
-        while (v) {
-                v->processed = FALSE;
-                v->visited = FALSE;
-                v = v->next;
-        }
-
-        v = g->first;
-
-        while (v) {
-                if ((v->indegree == 0) &&
-                    (g->compare("START", v->data) != 0)) {
-                        Vertex *V;
-
-                        V = find_first_vertex_with_valid_outdegree(g);
-                        if (v != V)
-                                graph_add_edge(g, V->data, v->data, irand(weight));
-                }
-
-                v = v->next;
-        }
-
-        v = g->first;
-
-        while (v) {
-                if ((v->outdegree == 0) &&
-                    (g->compare("END", v->data) != 0)) {
-                        graph_add_edge(g, v->data, "END", irand(weight));
-                }
-
-                v = v->next;
-        }
-}
-
 static void add_random_edges(List *l, Graph *g, int edge_count, int weight)
 {
         int i;
@@ -262,6 +158,7 @@ static void add_random_edges(List *l, Graph *g, int edge_count, int weight)
         }
 }
 
+#if 0
 static Graph *generate_graph(int edges)
 {
         Graph *g, *t;
@@ -377,8 +274,9 @@ static Graph *generate_graph(int edges)
         fclose(fp);
         return g;
 }
+#endif
 
-static void generate_graph_adj_matrix(int edges)
+static Graph *generate_graph_adj_matrix(int edges)
 {
         Graph *g;
         Vertex *v;
@@ -420,9 +318,6 @@ static void generate_graph_adj_matrix(int edges)
         graph_new_vertex(g, strdup("END"));
 
         num_vertices += 2;
-
-        /* Print Vertices data */
-        list_print(list);
 
         /* Max edges */
         max_edges = num_vertices * edges;
@@ -476,6 +371,10 @@ static void generate_graph_adj_matrix(int edges)
 
         /* Prune */
         printf("===============\n");
+        /* Prune vertices with indegree 0
+           TODO: This should be a recursive function, starting from the begining
+           each time we delete a vertex.
+         */
         v = g->first;
         while (v) {
                 if (v->indegree == 0) {
@@ -490,26 +389,23 @@ static void generate_graph_adj_matrix(int edges)
                                 graph_delete_vertex(g, v->data);
                         }
                 }
-
-                if (v->outdegree == 0) {
-                        if (g->compare("END", v->data) != 0)
-                                graph_add_edge(g, v->data, "END", irand(edges));
-                }
-
                 v = v->next;
         }
-        printf("===============\n");
 
-
-        /* Print adj matrix */
-        for (i = 0; i < num_vertices; i++) {
-                for (j = 0; j < num_vertices; j++) {
-                        printf("%4d", adj_arr[i][j]);
+        /* Add edges to vertices with outdegree 0, from the vertices to 'END' */
+        v = g->first;
+        while (v) {
+                if (v->outdegree == 0) {
+                        if (g->compare("END", v->data) != 0) {
+                                printf("Adding edge %s --> %s\n", (char *)v->data,"END");
+                                graph_add_edge(g, v->data, "END", irand(edges));
+                        }
                 }
-                printf("\n");
+                v = v->next;
         }
 
-        print_graph(g);
+        printf("===============\n");
+
 
         /* Free adjacency matrix */
         for (i = 0; i < num_vertices; i++) {
@@ -518,93 +414,8 @@ static void generate_graph_adj_matrix(int edges)
         }
         free(adj_arr);
         adj_arr = NULL;
-}
 
-
-void swap(int *a, int *b)
-{
-        int t;
-
-        t = *a;
-        *a = *b;
-        *b = t;
-}
-
-static void generate_dag(int edges)
-{
-        int num_vertices, max_edges, i, j, count;
-        int *adj_arr, *dag;
-
-        /* Select a random number of vertices */
-        do {
-                num_vertices = irand(MAX_VERTICES);
-        } while (num_vertices == 0);
-
-        printf("Generating graph with %d nodes.\n", num_vertices);
-
-        /* Max edges */
-        max_edges = num_vertices * edges;
-
-        adj_arr = (int *)malloc(sizeof(int) * num_vertices * num_vertices);
-        if (adj_arr == NULL) {
-                fprintf(stderr, "Error allocating memory\n");
-                exit(EXIT_FAILURE);
-        }
-
-        dag = (int *)malloc(sizeof(int) * num_vertices);
-        if (dag == NULL) {
-                fprintf(stderr, "Error allocating memory\n");
-                free(adj_arr);
-                exit(EXIT_FAILURE);
-        }
-
-        for (i = 0; i < num_vertices; i++) {
-                dag[i] = i;
-        }
-
-        /* Permute */
-        for (i = 0; i < num_vertices; i++) {
-                swap(dag + i + irand(num_vertices - i), dag + i);
-        }
-
-        for (count = 0; count < num_vertices; ) {
-                int pos;
-
-                if ((i = irand(num_vertices)) == (j = irand(num_vertices)))
-                        continue;
-
-                if (i > j)
-                        swap (&i, &j);
-                i = dag[i];
-                j = dag[j];
-
-                pos = i * num_vertices + j;
-
-                if (!adj_arr[pos]) {
-                        adj_arr[pos] = irand(edges);
-                        count++;
-                }
-                printf(">> count(%d): pos(%d): i(%d): j(%d)\n",
-                       count, pos, i, j);
-        }
-
-        /*
-        printf("The DAG:\n");
-        for (i = 0; i < num_vertices; i++) {
-                printf("%d : %d\n", i, dag[i]);
-        }
-        */
-
-        printf("The Adjacency Matrix:\n");
-        for (i = 1; i <= num_vertices; i++) {
-                for (j = i + 1; j <= num_vertices; j++) {
-                        int pos = (i - 1) * num_vertices + j - 1;
-                        printf("%d -> %d :(%d): %d\n", i, j, pos, adj_arr[pos]);
-                }
-        }
-
-        free(adj_arr);
-        free(dag);
+        return g;
 }
 
 int main(int argc, char **argv)
@@ -674,8 +485,10 @@ int main(int argc, char **argv)
                                         graph_free(g);
                                         g = NULL;
                                         */
-                                        generate_graph_adj_matrix(max_edge);
-                                        //generate_dag(max_edge);
+                                        g = generate_graph_adj_matrix(max_edge);
+                                        print_graph(g);
+                                        graph_free(g);
+                                        g = NULL;
                                         write_to_socket(new, START, strlen(START));
                                         FD_SET(new, &active_fd_set);
                                 } else {         /* Existing connection */
